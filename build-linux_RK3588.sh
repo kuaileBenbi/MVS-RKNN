@@ -23,5 +23,6 @@ make install
 cd -
 
 # 运行demo
-cd install/rknn_yolov5_demo_Linux/ && ./rknn_yolov5_demo ./model/RK3588/yolov5s_relu_tk2_RK3588_i8.rknn 0
+# cd install/rknn_yolov5_demo_Linux/ && ./rknn_yolov5_demo ./model/RK3588/yolov5s_relu_tk2_RK3588_i8.rknn 0
+cd install/rknn_yolov5_demo_Linux/ && ./rknn_yolov5_demo ./model/RK3588/yolov5s_relu_tk2_RK3588_i8.rknn
 

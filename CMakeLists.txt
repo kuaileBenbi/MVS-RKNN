@@ -34,7 +34,7 @@ include_directories( ${RGA_PATH}/include)
 set(CMAKE_INSTALL_RPATH "lib")
 
 # MVS
-# include_directories( ${CMAKE_SOURCE_DIR}/include)
+include_directories( ${CMAKE_SOURCE_DIR}/include)
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 set(MVS_LIB ${CMAKE_SOURCE_DIR}/lib/MvCameraControl.so)
 
@@ -51,6 +51,7 @@ target_link_libraries(rknn_yolov5_demo
   ${RKNN_RT_LIB}
   ${RGA_LIB}
   ${OpenCV_LIBS}
+  MvCameraControl
 )
 
 
