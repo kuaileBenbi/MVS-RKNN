@@ -129,6 +129,7 @@ static void *WorkThread(void *pUser)
     long tmpTime, lopTime = time.tv_sec * 1000 + time.tv_usec / 1000;
 
     cv::Size newSize(256, 256);
+    cv::Mat srcImage;
     int initFrames = 0;
     while (1)
     {
@@ -142,9 +143,18 @@ static void *WorkThread(void *pUser)
             // printf("GetOneFrame, Width[%d], Height[%d], nFrameNum[%d]\n",
             //        stImageInfo.nWidth, stImageInfo.nHeight, stImageInfo.nFrameNum);
 
-            int type = (stImageInfo.enPixelType == PixelType_Gvsp_RGB8_Packed) ? CV_8UC3 : CV_8UC1;
-
-            cv::Mat srcImage(stImageInfo.nHeight, stImageInfo.nWidth, type, pData);
+            if (srcImage.empty())
+            {
+                cv::Mat srcImage2(stImageInfo.nHeight, stImageInfo.nWidth, CV_8UC1, pData);
+                srcImage = srcImage2;
+                printf("empty!no copy!\n");
+            }
+            else
+            {
+                unsigned char *new_data_ptr = srcImage.ptr<unsigned char>();
+                size_t data_size = stImageInfo.nHeight * stImageInfo.nWidth * srcImage.elemSize();
+                memcpy(new_data_ptr, pData, data_size);
+            }
 
             // resize图片尺寸
             cv::Mat resizedImage;
