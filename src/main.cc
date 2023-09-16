@@ -128,32 +128,53 @@ static void *WorkThread(void *pUser)
     gettimeofday(&time, nullptr);
     long tmpTime, lopTime = time.tv_sec * 1000 + time.tv_usec / 1000;
 
+    cv::Size newSize(256, 256);
+    int initFrames = 0;
     while (1)
     {
         if (g_bExit)
         {
             break;
         }
-
         nRet = MV_CC_GetOneFrameTimeout(pUser, pData, nDataSize, &stImageInfo, 1000);
         if (nRet == MV_OK)
         {
-            printf("GetOneFrame, Width[%d], Height[%d], nFrameNum[%d]\n",
-                   stImageInfo.nWidth, stImageInfo.nHeight, stImageInfo.nFrameNum);
+            // printf("GetOneFrame, Width[%d], Height[%d], nFrameNum[%d]\n",
+            //        stImageInfo.nWidth, stImageInfo.nHeight, stImageInfo.nFrameNum);
 
             int type = (stImageInfo.enPixelType == PixelType_Gvsp_RGB8_Packed) ? CV_8UC3 : CV_8UC1;
 
-            cv::Mat img(stImageInfo.nHeight, stImageInfo.nWidth, type, pData);
+            cv::Mat srcImage(stImageInfo.nHeight, stImageInfo.nWidth, type, pData);
 
-            
+            // resize图片尺寸
+            cv::Mat resizedImage;
+            cv::resize(srcImage, resizedImage, newSize);
+            // 使用resizedImage
 
             // 如果需要，可以显示图像
-            // cv::imshow("Image", img);
+            // cv::imshow("Image", resizedImage);
             // cv::waitKey(30);
 
-            // rkpool[frames % n]->ori_img
+            if (initFrames < n)
+            {
+                rknn_lite *ptr = new rknn_lite(model_name, initFrames % 3);
+                rkpool.push_back(ptr);
+                ptr->ori_img = resizedImage;
+                futs.push(pool.submit(&rknn_lite::interf, &(*ptr)));
+                initFrames += 1;
+                continue;
+            }
 
-            rkpool[frames % n]->ori_img = img;
+            if (futs.front().get() != 0)
+                break;
+            futs.pop();
+            cv::imshow("Camera FPS", rkpool[frames % n]->ori_img);
+            if (cv::waitKey(1) == 'q') // 延时1毫秒,按q键退出
+                break;
+            // if (!capture.read(rkpool[frames % n]->ori_img))
+            //     break;
+            rkpool[frames % n]->ori_img = resizedImage;
+
             futs.push(pool.submit(&rknn_lite::interf, &(*rkpool[frames++ % n])));
 
             if (frames % 60 == 0)
@@ -164,6 +185,16 @@ static void *WorkThread(void *pUser)
                 lopTime = tmpTime;
             }
 
+            // rkpool[frames % n]->ori_img = resizedImage;
+            // futs.push(pool.submit(&rknn_lite::interf, &(*rkpool[frames++ % n])));
+
+            // if (frames % 60 == 0)
+            // {
+            //     gettimeofday(&time, nullptr);
+            //     tmpTime = time.tv_sec * 1000 + time.tv_usec / 1000;
+            //     printf("60帧平均帧率:\t%f帧\n", 60000.0 / (float)(tmpTime - lopTime));
+            //     lopTime = tmpTime;
+            // }
         }
         else
         {
@@ -199,13 +230,13 @@ int main(int argc, char **argv)
     printf("线程数:\t%d\n", n);
 
     // 初始化
-    for (int i = 0; i < n; i++)
-    {
-        rknn_lite *ptr = new rknn_lite(model_name, i % 3);
-        rkpool.push_back(ptr);
-        // capture >> ptr->ori_img;
-        futs.push(pool.submit(&rknn_lite::interf, &(*ptr)));
-    }
+    // for (int i = 0; i < n; i++)
+    // {
+    //     rknn_lite *ptr = new rknn_lite(model_name, i % 3);
+    //     rkpool.push_back(ptr);
+    //     // capture >> ptr->ori_img;
+    //     futs.push(pool.submit(&rknn_lite::interf, &(*ptr)));
+    // }
 
     /* 摄像头初始化 */
     int nRet = MV_OK;
@@ -353,6 +384,9 @@ int main(int argc, char **argv)
     嘻
     嘻
     */
+
+    return 0;
+
     // char *model_name = NULL;
     // if (argc != 3)
     // {
